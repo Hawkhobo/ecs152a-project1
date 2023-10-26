@@ -1,6 +1,10 @@
+# Code has been sampled from Muhammad Haroon's code, with modifications for each 1a activity.
+# Original code: https://github.com/Haroon96/ecs152a-fall-2023/blob/main/week1/code/dpkt-example.py
 
 import dpkt
 import sys
+
+# Visit https://example.com in your browser.
 
 def parse_pcap(pcap_file):
 
