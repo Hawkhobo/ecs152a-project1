@@ -15,6 +15,7 @@ def parse_pcap(pcap_file):
     # iterate over packets
     for timestamp, data in pcap:
 
+        # convert to link layer object
         eth = dpkt.ethernet.Ethernet(data)
 
         # do not proceed if there is no network layer data
