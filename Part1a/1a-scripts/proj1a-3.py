@@ -4,6 +4,10 @@
 import dpkt
 import sys
 
+# socket is used in the dpkt docs, and allows us to printout the IP (or MAC) source and destination addresses for each packet
+import socket
+import datetime
+
 # Visit http://httpforever.com in your browser.
 
 def parse_pcap(pcap_file):
@@ -19,39 +23,45 @@ def parse_pcap(pcap_file):
         eth = dpkt.ethernet.Ethernet(data)
 
         # do not proceed if there is no network layer data
-        if not isinstance(eth.data, dpkt.ip.IP):
+        if not isinstance(eth.data, dpkt.ip6.IP6):
             continue
         
-        # extract network layer data
-        ip = eth.data
+        ip6 = eth.data
 
         # do not proceed if there is no transport layer data
-        if not isinstance(ip.data, dpkt.tcp.TCP):
+        if not isinstance(ip6.data, dpkt.udp.UDP):
             continue
-
-        # extract transport layer data
-        tcp = ip.data
+        
+        udp = ip6.data
 
         # do not proceed if there is no application layer data
-        # here we check length because we don't know protocol yet
-        if not len(tcp.data) > 0:
+        if not len(udp.data) > 0:
             continue
 
         # extract application layer data
-        ## if destination port is 80, it is a http request
-        if tcp.dport == 80:
+        if udp.dport == 53: # dns port number = 53 (server-side)
             try:
-                http = dpkt.http.Request(tcp.data)
-                print(http.headers)
+                n += 1
+                dns = dpkt.dns.DNS()
+                # dns.unpack(udp.data)
+                print('-- Destination Packet', n, '--')
+                print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
+                print('\tIP: %s -> %s ' % \
+                     (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
             except:
-                print("Malformed HTTP Request packet")
-        ## if source port is 80, it is a http response
-        elif tcp.sport == 80:
+                print("Error parsing DNS")
+        ## source port is 0-65535, random assignment from OS 
+        elif udp.sport >= 0:
             try:
-                http = dpkt.http.Response(tcp.data)
-                print(http.headers)
+                m += 1
+                dns = dpkt.dns.DNS()
+                dns.unpack(udp.data)
+                print('-- Source Packet', m, '--')
+                print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
+                print('\tIP: %s -> %s ' % \
+                     (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
             except:
-                print("Malformed HTTP Response packet")
+                print("Error parsing DNS")
 
 
 if __name__ == '__main__':
