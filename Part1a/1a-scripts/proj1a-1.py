@@ -9,6 +9,7 @@
 import dpkt
 import sys
 
+# Because MAC physical address is supported on the ICMPv6 layer, but not IP addresses, we use the socket library to display the MAC addresses of the source and destination machines.
 import socket
 import datetime
 
@@ -44,6 +45,7 @@ def parse_pcap(pcap_file):
             print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
             print('\tIP: %s -> %s ' % \
                  (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
+            print(f'\tData: {icmp6}')
             
 if __name__ == '__main__':
     if len(sys.argv) < 2:
