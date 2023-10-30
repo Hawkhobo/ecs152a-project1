@@ -77,11 +77,8 @@ def parse_pcap(pcap_file):
             except:
                 print("Malformed HTTPS Response packet")
                 
-
-
     print('-- HTTP Count: ', httpCount, '--')
     print('-- HTTPS Count: ', httpsCount, '--')
-
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
