@@ -21,8 +21,9 @@ def parse_pcap(pcap_file):
     # iterate over packets
     n = 0
     m = 0
+    httpCount = 0
+    httpsCount = 0
     for timestamp, data in pcap:
-
         # convert to link layer object
         eth = dpkt.ethernet.Ethernet(data)
         
@@ -33,39 +34,53 @@ def parse_pcap(pcap_file):
         ip6 = eth.data
 
         # do not proceed if there is no transport layer data
-        if not isinstance(ip6.data, dpkt.udp.UDP):
+        if not isinstance(ip6.data, dpkt.tcp.TCP):
             continue
         
-        udp = ip6.data
+        tcp = ip6.data
 
         # do not proceed if there is no application layer data
-        if not len(udp.data) > 0:
+        if not len(tcp.data) > 0:
             continue
         
         # extract application layer data
-        if udp.dport == 53: # dns port number = 53 (server-side)
+        if tcp.dport == 80:
             try:
-                n += 1
-                dns = dpkt.dns.DNS()
-                # dns.unpack(udp.data)
-                print('-- Destination Packet', n, '--')
+                httpCount += 1
+                n+=1
+                print('-- Request Packet', n, '--')
                 print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
-                print('\tIP: %s -> %s ' % \
+                print('\tSource to Destination: %s -> %s ' % \
                      (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
             except:
-                print("Error parsing DNS")
-        ## source port is 0-65535, random assignment from OS 
-        elif udp.sport >= 0:
+                print("Malformed HTTP Request packet")
+        ## if source port is 80, it is a http response
+        elif tcp.sport == 80:
             try:
-                m += 1
-                dns = dpkt.dns.DNS()
-                dns.unpack(udp.data)
-                print('-- Source Packet', m, '--')
+                httpCount += 1
+                m+=1
+                print('-- Response Packet', m, '--')
                 print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
-                print('\tIP: %s -> %s ' % \
+                print('\tSource to Destination: %s -> %s ' % \
                      (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
             except:
-                print("Error parsing DNS")
+                print("Malformed HTTP Response packet")
+        # Determine if there are any HTTPS protocol packets. HTTPS request/response is standardized to port 443
+        elif tcp.dport == 443:
+            try:
+                httpsCount += 1
+            except:
+                print("Malformed HTTPS Response packet")
+        elif tcp.sport == 443:
+            try:
+                httpsCount += 1
+            except:
+                print("Malformed HTTPS Response packet")
+                
+
+
+    print('-- HTTP Count: ', httpCount, '--')
+    print('-- HTTPS Count: ', httpsCount, '--')
 
 
 if __name__ == '__main__':
