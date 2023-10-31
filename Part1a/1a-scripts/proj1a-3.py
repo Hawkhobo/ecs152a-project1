@@ -18,24 +18,24 @@ def parse_pcap(pcap_file):
 
     # iterate over packets
     n = 0
-    m = 0
     httpCount = 0
     httpsCount = 0
     for timestamp, data in pcap:
+        n += 1
         # convert to link layer object
         eth = dpkt.ethernet.Ethernet(data)
         
         # do not proceed if there is no network layer data
-        if not isinstance(eth.data, dpkt.ip6.IP6):
+        if not isinstance(eth.data, dpkt.ip6.IP6) and not  isinstance(eth.data, dpkt.ip.IP):
             continue
         
-        ip6 = eth.data
+        ip = eth.data
 
         # do not proceed if there is no transport layer data
-        if not isinstance(ip6.data, dpkt.tcp.TCP):
+        if not isinstance(ip.data, dpkt.tcp.TCP):
             continue
         
-        tcp = ip6.data
+        tcp = ip.data
 
         # do not proceed if there is no application layer data
         if not len(tcp.data) > 0:
@@ -45,33 +45,39 @@ def parse_pcap(pcap_file):
         if tcp.dport == 80:
             try:
                 httpCount += 1
-                n+=1
-                print('-- Request Packet', n, '--')
+                print('-- HTTP Request Packet', n, '--')
                 print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
                 print('\tSource to Destination: %s -> %s ' % \
-                     (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
+                     (socket.inet_ntop(socket.AF_INET, ip.src), socket.inet_ntop(socket.AF_INET, ip.dst)))
             except:
                 print("Malformed HTTP Request packet")
         ## if source port is 80, it is a http response
         elif tcp.sport == 80:
             try:
                 httpCount += 1
-                m+=1
-                print('-- Response Packet', m, '--')
+                print('-- HTTP Response Packet', n, '--')
                 print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
                 print('\tSource to Destination: %s -> %s ' % \
-                     (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
+                     (socket.inet_ntop(socket.AF_INET, ip.src), socket.inet_ntop(socket.AF_INET, ip.dst)))
             except:
                 print("Malformed HTTP Response packet")
         # Determine if there are any HTTPS protocol packets. HTTPS request/response is standardized to port 443
         elif tcp.dport == 443:
             try:
                 httpsCount += 1
+                print('-- HTTP Request Packet', n, '--')
+                print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
+                print('\tSource to Destination: %s -> %s ' % \
+                     (socket.inet_ntop(socket.AF_INET, ip.src), socket.inet_ntop(socket.AF_INET, ip.dst)))
             except:
-                print("Malformed HTTPS Response packet")
+                print("Malformed HTTPS Request packet")
         elif tcp.sport == 443:
             try:
                 httpsCount += 1
+                print('-- HTTP Response Packet', n, '--')
+                print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
+                print('\tSource to Destination: %s -> %s ' % \
+                     (socket.inet_ntop(socket.AF_INET, ip.src), socket.inet_ntop(socket.AF_INET, ip.dst)))
             except:
                 print("Malformed HTTPS Response packet")
                 
