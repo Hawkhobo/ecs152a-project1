@@ -24,28 +24,27 @@ def parse_pcap(pcap_file):
     # iterate over packets
     n = 0
     for timestamp, data in pcap:
-
+        n += 1
         # convert to link layer object
         eth = dpkt.ethernet.Ethernet(data)
 
         # do not proceed if there is no network layer data
-        if not isinstance(eth.data, dpkt.ip6.IP6):
+        if not isinstance(eth.data, dpkt.ip.IP):
             continue
         
         # extract network layer data
-        ip6 = eth.data
+        ip = eth.data
 
         # read network layer headers (ICMPv6)
         # using ICMP6, because our network traffic is ICMPv6 (as opposed to ICMPv4) 
         # note: the ICMP protocol does not have a registered port
-        n += 1
-        if isinstance(ip6.data, dpkt.icmp6.ICMP6):
-            icmp6 = ip6.data
+        if isinstance(ip.data, dpkt.icmp.ICMP):
+            icmp = ip.data
             print('-- Packet', n, '--')
             print('\tTimestamp: ', str(datetime.datetime.fromtimestamp(timestamp, datetime.UTC)))
             print('\tIP: %s -> %s ' % \
-                 (socket.inet_ntop(socket.AF_INET6, ip6.src), socket.inet_ntop(socket.AF_INET6, ip6.dst)))
-            print(f'\tData: {icmp6}')
+                 (socket.inet_ntop(socket.AF_INET, ip.src), socket.inet_ntop(socket.AF_INET, ip.dst)))
+            print(f'\tData: {icmp}')
             
 if __name__ == '__main__':
     if len(sys.argv) < 2:
