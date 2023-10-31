@@ -37,9 +37,9 @@ def parse_pcap(pcap_file):
         
         tcp = ip.data
 
-        # do not proceed if there is no application layer data
-        #if not len(tcp.data) > 0:
-         #   continue
+         # do not proceed if there is no application layer data
+        if not len(tcp.data) > 0:
+            continue
         
         # extract application layer data
         if tcp.dport == 80:
