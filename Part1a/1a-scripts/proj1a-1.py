@@ -35,8 +35,7 @@ def parse_pcap(pcap_file):
         # extract network layer data
         ip = eth.data
 
-        # read network layer headers (ICMPv6)
-        # using ICMP6, because our network traffic is ICMPv6 (as opposed to ICMPv4) 
+        # read network layer headers (ICMPv4)
         # note: the ICMP protocol does not have a registered port
         if isinstance(ip.data, dpkt.icmp.ICMP):
             icmp = ip.data
