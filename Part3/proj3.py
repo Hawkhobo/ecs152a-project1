@@ -77,6 +77,7 @@ if __name__ == '__main__':
         SID = '921423591'
 
         # Grab the requested URL, pass in a custom request header "Student-Id:"
+        # From requests library docs, `Verify` checks certificates before making TCP connection. We turn it off since we trust the server and just want to send a request
         response = requests.get('https://kartik-labeling-cvpr-0ed3099180c2.herokuapp.com/ecs152a_ass1', headers = {"Student-Id": SID}, verify=False)
         # Print out the headers from the HTTP response
         print(response.headers)
