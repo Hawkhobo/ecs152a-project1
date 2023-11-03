@@ -1,46 +1,38 @@
 
 import dpkt
 import sys
+import socket
+import datetime
 
-def read_pcap(file_path):
-    packets = []
-    with open(file_path, 'rb') as pcap_file:
-        pcap = dpkt.pcap.Reader(pcap_file)
-        for ts, buf in pcap:
-            eth = dpkt.ethernet.Ethernet(buf)
-            if isinstance(eth.data, dpkt.icmp.ICMP):
-                packets.append((ts, eth))
-    return packets
+def parse_pcap(pcap_file):
+    try:
+        with open(pcap_file, 'rb') as f:
+            pcap = dpkt.pcap.Reader(f)
+            n = 0
+            for timestamp, data in pcap:
+                n += 1
+                eth = dpkt.ethernet.Ethernet(data)
+                if not isinstance(eth.data, dpkt.ip.IP):
+                    continue
+                ip = eth.data
+                if isinstance(ip.data, dpkt.icmp.ICMP):
+                    icmp = ip.data
+                    print('-- Packet', n, '--')
+                    print('Timestamp:', datetime.datetime.fromtimestamp(timestamp, datetime.timezone.utc))
+                    print(f'IP: {socket.inet_ntop(socket.AF_INET, ip.src)} -> {socket.inet_ntop(socket.AF_INET, ip.dst)}')
+                    print('-- ICMP properties --')
+                    print(f'Type: {icmp.type}, Code: {icmp.code}, Checksum: {icmp.sum}')
+                    print('Data:', repr(icmp.data))
+    except FileNotFoundError:
+        print(f"File '{pcap_file}' not found.")
 
-def compare_icmp_pcaps(pcap1, pcap2):
-    differences = []
-    for (ts1, eth1), (ts2, eth2) in zip(pcap1, pcap2):
-        if eth1 != eth2:
-            differences.append((ts1, eth1, eth2))
-    return differences
+if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print("Usage: python script.py ass1_2.pcap ass1_3.pcap")
+    else:
+        file1, file2 = sys.argv[1], sys.argv[2]
+        print(f'Printout for {file1}:\n')
+        parse_pcap(file1)
+        print(f'Printout for {file2}:\n')
+        parse_pcap(file2)
 
-if len(sys.argv) != 3:
-    print("Usage: python analyze_and_compare_icmp_pcaps.py icmp_pcap1.pcap icmp_pcap2.pcap")
-    sys.exit(1)
-
-icmp_pcap_file1 = sys.argv[1]
-icmp_pcap_file2 = sys.argv[2]
-
-try:
-    icmp_packets1 = read_pcap(icmp_pcap_file1)
-    icmp_packets2 = read_pcap(icmp_pcap_file2)
-except FileNotFoundError:
-    print("File not found.")
-    sys.exit(1)
-
-differences = compare_icmp_pcaps(icmp_packets1, icmp_packets2)
-
-if not differences:
-    print("No differences found in ICMP packets.")
-else:
-    print("Differences found in ICMP packets:")
-    for ts, eth1, eth2 in differences:
-        print(f"Timestamp: {ts}")
-        print(f"ICMP Packet 1: {eth1.data}")
-        print(f"ICMP Packet 2: {eth2.data}")
-        print()
